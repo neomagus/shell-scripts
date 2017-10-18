@@ -1,0 +1,387 @@
+#!/bin/bash
+
+principal()                 #Função que carrega o menu para chamar as demais funções do script
+{
+  main_opcao=               #Variavel que recebe a op��o de escolha do menu principal. Iniciada com um valor nulo.
+  while [ "$main_opcao" != 0 ]
+  do    
+    echo -e "\n"
+    echo "    ============================================="
+    echo "    |       Entre com a opcao desejada:         |"
+    echo "    ============================================="
+    echo "    |                                           |"
+    echo "    |       1 - AUTORIZAR                       |"
+    echo "    |                                           |"
+    echo "    |       2 - VALIDAR                         |"
+    echo "    |                                           |"
+    echo "    |       3 - DISPONIBILIZAR                  |"
+    echo "    |                                           |"                  
+    echo "    |       0 - SAIR                            |"
+    echo "    |                                           |"
+    echo "    |                                           |"
+    echo "    |                                           |"
+    echo "    |                                           |"
+    echo "    ============================================="
+    read -ep "   > " "main_opcao"
+    clear
+    case $main_opcao in
+      1) autoriza ;;
+      2) valida ;;
+      3) disponibiliza ;;
+      0) echo -e "\n\nAté logo!!\n\n" ;;             #Sai do script
+      *) tput setaf 7; tput setab 1; echo -e "\n""Opcao invalida!!!""\n"; tput sgr0 ;;  #comando 'tput' muda as cores da fonte e background para mostrar a op��o invalida
+    esac
+  done
+}
+
+vld_command()      #Fun��o que verifica se algum comando apresentou erro, caso apresente, o script � encerrado
+{
+  comok=$?         #Vari�vel recebe o valor da vari�vel de ambiente que testa o sucesso de comandos
+  if [ $comok != "0" ]
+    then
+      echo -e "\n""Ocorreu um erro ao tentar realizar um comando. Por favor verifique o detalhe acima.""\n"
+      exit
+    else
+      return 0;
+  fi
+}
+
+setaperm()                                     #Funcao que ajusta as permissoes de um diretorio criado na funcao autoriza 
+{
+  cd $dir1
+  sudo chmod 775 -R $dir1
+  cd ..
+  echo -e "\n"
+  echo -e "O diretório " $dir1 "foi criado com as permissões conforme abaixo: ""\n"
+  find $dir1 -printf '%70f\t%10m\t%M\n'        #Comando find para exibir as permiss�es detalhadas em colunas
+  echo -e "\n"
+  echo -e "Copie e cole o texto abaixo no AIG:""\n"
+  tput setaf 4; tput setab 7;
+  echo -e "Seguem as informações para o início do recebimento dos dados e sua respectiva janela de transferencia.""\n""JANELA DE TRANSFERENCIA: "`date +%d/%m/%Y`" a "`date -d "+30 days" '+%d/%m/%Y'`"\n""DIRETORIO DE TRANSFERENCIA: " $dir1
+  tput sgr0
+  echo -e "\n"
+}
+
+autoriza()                                     #Fun��o para autorizar remessa (cria o diretorio)
+{
+  echo -e "Entre com o diretório a ser criado (colar o diretório completo): "
+  read -ep "   > " dir1
+  if [ "$dir1" = "" ]
+      then
+        echo -e "\nVoce nao informou nenhum caminho. E necessario informar um diretorio para prosseguir."
+        echo -e "\n""Tecle <ENTER> para continuar..."
+        read #Pausa no sistema.
+        clear
+        autoriza
+  fi
+  cd $dir1 2> /dev/null  
+  verif_erro=$?
+  if [ $verif_erro = 0 ]
+    then
+      echo -e "\nO diretorio informado ja existe!\n"
+      read -ep "Gostaria de ajustar suas permissoes agora??(s/n) > " resp
+      if [ "$resp" = "n" ]
+        then
+          clear
+          principal
+        elif [ "$resp" = "s" ]
+          then
+            setaperm             
+        else
+          echo -e "\n""Resposta Inválida!! Entre com 's' ou 'n': "
+          continue
+      fi
+  fi
+  mkdir $dir1
+  setaperm         #Chama a funcao para ajustar as permissoes e retornar o texto do AIG
+}
+   
+valida()           #Fun��o para validar remessa
+{
+  trata_PRJ()      #Funcao que trata especificamente o dado que tenha PRJ de dado PRE
+  {
+    echo -e "\n""Os dados são PRE-STACK e possuem PRJ (s/n)?\n\n"
+    read -ep "   > " eprj
+     if [ $eprj = "n" ]
+       then
+         sudo chmod 550 -R $1
+         sudo chmod 3775 `find $1 -type d`
+         trata_resposta $1
+       elif [ $eprj = "s" ]
+         then
+           sudo chmod 777 -R $1
+           echo -e "\nEntre com a chave do tecnico que realizara o carregamento:\n"
+           read -ep " > " chave_tecnico
+           chave_tecnico=`echo $chave_tecnico | tr [a-z] [A-Z]`           #Converte a chave do t�cnico para o formato mai�sculo
+           dirdwnld="/rdg/petrobras/carregamento_HSM/$chave_tecnico"
+           dirupld=`echo "$1" | sed 's/\/$//'`                            #Retira(se houver) a �ltima barra do caminho do diretorio de origem para n�o haver erro no comando cut a seguir
+           pasta=`echo "$dirupld" | rev | cut -d'/' -f1 | rev`            #Separa o ultimo subdiretorio do caminho do diretorio de origem
+           dirdwnld=`echo "$dirdwnld"/"$pasta"`                           #Concatena o ultimo subdiretorio do caminho do diretorio de origem com o diretorio do tecnico
+           clear
+           echo -e "\n""O diretório será movido para o caminho abaixo:" 
+           echo -e "\n"$dirdwnld"\n"                                      #Exibe o diretorio de destino
+           sleep 1
+           echo -e "\n""Tecle <ENTER> para continuar..."
+           read #Pausa no sistema.
+           move_dir $1 $dirdwnld                                          #Chama a funcao que move os diretorios
+         else
+           echo -e "\n""Resposta Inválida!! Entre com 's' ou 'n': "
+           trata_PRJ $dirupld
+     fi
+  }
+  move_dir()                                                              #Funcao que move os diretorios
+    {
+       mv $1 $2
+       vld_command
+       cd $2
+       echo -e "\n""As permissões foram ajustadas conforme abaixo:""\n""\n"
+       cd $2
+       find $2 -printf '%70f\t%10m\t%M\n'
+       echo -e "\n"
+       echo -e "Copie e cole o texto abaixo no AIG de Validação:""\n"
+       tput setaf 4; tput setab 7;
+       echo -e "O conteúdo da remessa enviada está de acordo com as informações extraídas do BR e 
+  o dado já foi transferido para a área da Petrobras.""\n"$dirdwnld"\n"
+       tput sgr0
+       resp=""
+    }    
+  trata_resposta()  #Fun��o que interage com o usu�rio na hora de atribuir as permiss�es. Caso seja dado PRE de PRJ o dado e tratado pela funcao trata_PRJ
+  {
+     echo -e "\n""Entre com o diretório de destino:""\n"
+     read -ep "   > " dirdwnld
+     if [ "$dirdwnld" = "" ]
+       then
+         echo -e "\nVoce nao informou nenhum caminho. E necessario informar um diretorio para prosseguir."
+         echo -e "\n""Tecle <ENTER> para continuar..."
+         read #Pausa no sistema.
+         clear
+         trata_resposta $dirupld
+     fi
+     clear
+     echo -e "\n""O diretório será movido para o caminho abaixo:"
+     echo -e "\n"$dirdwnld"\n"
+     sleep 1
+     resp=pular
+     while [ "$resp" != "" ] 
+     do
+       read -ep "Confirma (s/n)?  > " resp
+       if [ "$resp" = "n" ]
+         then
+           trata_resposta $dirupld
+         elif [ "$resp" = "s" ]
+           then
+           echo -e "\nMovendo os arquivos para o diretorio de carregamento... \n" 
+           move_dir $dirupld $dirdwnld    
+         else
+           echo -e "\n""Resposta Inválida!! Entre com 's' ou 'n': "
+           continue
+       fi
+     done     
+  }
+  checa_boletim()
+  {
+    echo -e "Os arquivos recebidos estão de acordo com o boletim(s/n)?""\n"
+    read -ep "   > " resposta
+    if [ $resposta = "s" ]
+      then
+        trata_PRJ $dirupld        
+    elif [ $resposta = "n" ]
+      then
+        echo -e "\n""Copie e cole o modelo de texto abaixo na notificação do AIG:""\n"
+        tput setaf 4; tput setab 7;
+        echo -e "\n""O conteúdo da remessa enviada não está de acordo com as informações 
+  extraidas do BR e será necessário que a empresa faça as devidas correções descritas conforme 
+  anexo."
+        tput sgr0
+        echo -e "\n""Anexe o arquivo com as correções a serem realizadas pela empresa na 
+  notificação do AIG""\n"
+    else
+      echo -e "\n""Resposta Inválida!! Entre com 's' ou 'n': \n"
+      checa_boletim
+    fi
+  } 
+  echo -e "\n""Entre com o diretório de origem (Basta colar o caminho do Access):""\n"
+  read -ep "   > " dirupld
+  if [ "$dirupld" = "" ]
+      then
+        echo -e "\nVoce nao informou nenhum caminho. E necessario informar um diretorio para prosseguir."
+        echo -e "\n""Tecle <ENTER> para continuar..."
+        read #Pausa no sistema.
+        clear
+        valida
+  fi
+  cd $dirupld 2> /dev/null
+  cod1erro=$?
+  if [ $cod1erro != 0 ]
+    then
+      echo -e "\nO diretorio informado esta sem permissao ou e inexistente!! Verifique o caminho informado.\n"
+      sleep 3
+      echo -e "\nListando o caminho informado:\n"
+      dirantes=`echo "$dirupld" | cut -d/ -f1-6`
+      ls -lhtr $dirantes        
+      echo -e "\n""Tecle <ENTER> para continuar..."
+      read #Pausa no sistema.
+      clear
+      valida
+  fi
+  echo -e "\n""Copie os arquivos abaixo e cole no teste do Excel:""\n"
+  tput setaf 4; tput setab 7;
+  find $PWD -type f | rev | cut -d'/' -f1 | rev
+  tput sgr0
+  echo -e "\n""Tecle <ENTER> para continuar..."
+  read #Pausa no sistema.
+  clear
+  checa_boletim
+}
+
+disponibiliza()
+{
+
+
+  trata_resp_disp()
+    {
+      pathdwnld="/rdg/gorceix/download/"`echo $pathupld | cut -d/ -f6-7`
+      echo -e "\nOs dados disponibilizados serão movidos para o diretório abaixo:\n\n"
+      tput setaf 4; tput setab 7;
+      echo -e "$pathdwnld"
+      tput sgr0
+      echo -e "\n\n"
+      resp="pular"
+      while [ "$resp" != "" ] 
+      do
+        read -ep "Confirma (s/n)?  > " resp
+        if [ "$resp" = "n" ]
+          then
+            disponibiliza
+          elif [ "$resp" = "s" ]
+            then
+            echo -e "Movendo os arquivos para o diretorio da Gorceix... \n" 
+            move_disp     
+          else
+            echo -e "\n""Resposta Inválida!! Entre com 's' ou 'n': "
+            continue
+        fi
+      done
+    }
+    
+    move_disp()
+    {
+      cd $pathdwnld 2> /dev/null
+      cod_erro=$?
+      if [ $cod_erro != 0 ]
+        then
+          sudo chmod 775 -R "$pathupld"
+          sleep 3
+          mv "$pathupld" "$pathdwnld"
+          cod_erro=$?
+          cd "$pathdwnld"
+          if [ "$cod_erro" != 0 ]
+            then
+              echo -e "\n""Ocorreu um erro ao tentar realizar um comando. Por favor verifique o detalhe acima.""\n"
+              echo -e "\n""Tecle <ENTER> para continuar..."
+              read #Pausa no sistema.
+            else
+              echo -e "\nArquivo movido com sucesso!!\n"
+              sleep 2            
+              echo -e "\nPermissoes aplicadas conforme abaixo:\n"
+              find "$pathdwnld" -printf '%70f\t%10m\t%M\n'        #Comando find para exibir as permiss�es detalhadas em colunas
+              echo -e "\n""Tecle <ENTER> para continuar..."
+              read #Pausa no sistema.
+              resp=""
+              clear
+          fi
+        else
+          echo -e "\n-Erro: Foi verificado que ja existe um diretorio dessa mesma AS.\n" 
+          echo -e "O diretorio nao foi movido. Favor conferir.\n\n"
+      fi
+    }  
+  
+  
+                               #Testes no diretorio informado
+  cod_erro=1
+  while [ $cod_erro != 0 ]
+  do
+    echo -e "\nEntre com o caminho dos dados informado no correio de disponibilização à parceria: \n"
+    read -e pathupld
+    clear
+    cd $pathupld 2> /dev/null
+    cod1erro=$?
+    if [ $cod1erro != 0 ]                                  #Se o diret�rio for inexistente ou n�o tiver acesso de leitura
+      then
+        echo -e "\nO diretorio informado esta sem permissao ou e inexistente!! Verifique o caminho informado.\n"
+        sleep 1
+        echo -e "\n""Tecle <ENTER> para continuar..."
+        read #Pausa no sistema.
+        clear
+        cod_erro=1
+        continue      
+      else
+        cod_erro=0
+    fi    
+    if [ "$pathupld" = "" ]                                #Se o diretorio for nulo
+      then
+        echo -e "\nVoce nao informou nenhum caminho. E necessario informar um diretorio para prosseguir."
+        echo -e "\n""Tecle <ENTER> para continuar..."
+        read #Pausa no sistema.
+        clear
+        cod_erro=1
+      else
+        cod_erro=0          
+    fi
+    nivelmaior=`echo $pathupld | cut -d/ -f8`
+    nivelmenor=`echo $pathupld | cut -d/ -f7`
+    if [ "$nivelmaior" != "" ]                             #Se o diretorio tiver a estrutura incorreta com mais niveis
+      then
+        echo -e "\nO diretorio informado esta fora do padrao!! Verifique o formato: /rdg/petrobras/gorceix/upload/PARCERIAS_XXXXX/AS_XX-20XX\n"
+        echo -e "\n""Tecle <ENTER> para continuar..."
+        read #Pausa no sistema.
+        clear
+        cod_erro=1
+        continue
+      else
+        cod_erro=0
+    fi 
+    if [ "$nivelmenor" = "" ]                              #Se o diretorio tiver a estrutura incorreta com menos niveis
+      then
+        echo -e "\nO diretorio informado esta fora do padrao!! Verifique o formato: /rdg/petrobras/gorceix/upload/PARCERIAS_XXXXX/AS_XX-20XX\n"
+        echo -e "\n""Tecle <ENTER> para continuar..."
+        read #Pausa no sistema.
+        clear
+        cod_erro=1
+        continue
+      else
+        cod_erro=0
+    fi    
+  done
+  
+  cd $pathupld
+  echo -e "\nCopie a lista a seguir para comparar com o arquivo anexo da AS:\n"
+  echo -e "\n""Tecle <ENTER> para continuar...\n"
+  read #Pausa no sistema.
+  clear
+  find $PWD -type f | rev | cut -d'/' -f1 | rev
+  echo -e "\n""Tecle <ENTER> para continuar..."
+  read #Pausa no sistema.
+  clear
+  resp="pular"
+  while [ "$resp" != "" ] 
+  do
+    read -ep "A comparacao foi bem sucedida(s/n)?: " resp
+    if [ "$resp" = "n" ]
+      then
+        echo -e "\nVerifique com o responsavel da disponibilizacao a divergencia na lista de arquivos."
+        echo -e "\n""Tecle <ENTER> para continuar..."
+        read #Pausa no sistema.
+        clear
+        principal
+      elif [ "$resp" = "s" ]
+        then
+          trata_resp_disp  
+      else
+        echo -e "\n""Resposta Inválida!! Entre com 's' ou 'n': "
+        continue
+    fi
+  done  
+}
+
+principal
