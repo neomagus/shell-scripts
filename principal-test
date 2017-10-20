@@ -1,13 +1,13 @@
 #!/bin/bash
 
-principal()                 #FunÃ§Ã£o que carrega o menu para chamar as demais funÃ§Ãµes do script
+principal()        #FunÃ§Ã£o que carrega o menu para chamar as demais funÃ§Ãµes do script
 {
-  main_opcao=               #Variavel que recebe a opção de escolha do menu principal. Iniciada com um valor nulo.
+  main_opcao=               #VariÃ¡vel que recebe a opÃ§Ã£o de escolha do menu principal. Iniciada com um valor nulo.
   while [ "$main_opcao" != 0 ]
   do    
     echo -e "\n"
     echo "    ============================================="
-    echo "    |       Entre com a opcao desejada:         |"
+    echo "    |       Entre com a opÃ§Ã£o desejada:         |"
     echo "    ============================================="
     echo "    |                                           |"
     echo "    |       1 - AUTORIZAR                       |"
@@ -29,14 +29,14 @@ principal()                 #FunÃ§Ã£o que carrega o menu para chamar as demais f
       2) valida ;;
       3) disponibiliza ;;
       0) echo -e "\n\nAtÃ© logo!!\n\n" ;;             #Sai do script
-      *) tput setaf 7; tput setab 1; echo -e "\n""Opcao invalida!!!""\n"; tput sgr0 ;;  #comando 'tput' muda as cores da fonte e background para mostrar a opção invalida
+      *) tput setaf 7; tput setab 1; echo -e "\n""OpÃ§Ã£o invÃ¡lida!!!""\n"; tput sgr0 ;;  #comando 'tput' muda as cores da fonte e background para mostrar a opÃ§Ã£o invÃ¡lida
     esac
   done
 }
 
-vld_command()      #Função que verifica se algum comando apresentou erro, caso apresente, o script é encerrado
+vld_command()      #FunÃ§Ã£o que verifica se algum comando apresentou erro, caso apresente, o script Ã© encerrado
 {
-  comok=$?         #Variável recebe o valor da variável de ambiente que testa o sucesso de comandos
+  comok=$?         #VariÃ¡vel recebe o valor da variÃ¡vel de ambiente que testa o sucesso de comandos
   if [ $comok != "0" ]
     then
       echo -e "\n""Ocorreu um erro ao tentar realizar um comando. Por favor verifique o detalhe acima.""\n"
@@ -46,23 +46,23 @@ vld_command()      #Função que verifica se algum comando apresentou erro, caso a
   fi
 }
 
-setaperm()                                     #Funcao que ajusta as permissoes de um diretorio criado na funcao autoriza 
+setaperm()         #Funcao que ajusta as permissoes de um diretorio criado na funcao autoriza 
 {
   cd $dir1
   sudo chmod 775 -R $dir1
   cd ..
   echo -e "\n"
   echo -e "O diretÃ³rio " $dir1 "foi criado com as permissÃµes conforme abaixo: ""\n"
-  find $dir1 -printf '%70f\t%10m\t%M\n'        #Comando find para exibir as permissões detalhadas em colunas
+  find $dir1 -printf '%70f\t%10m\t%M\n'        #Comando find para exibir as permissÃµes detalhadas em colunas
   echo -e "\n"
   echo -e "Copie e cole o texto abaixo no AIG:""\n"
   tput setaf 4; tput setab 7;
-  echo -e "Seguem as informaÃ§Ãµes para o inÃ­cio do recebimento dos dados e sua respectiva janela de transferencia.""\n""JANELA DE TRANSFERENCIA: "`date +%d/%m/%Y`" a "`date -d "+30 days" '+%d/%m/%Y'`"\n""DIRETORIO DE TRANSFERENCIA: " $dir1
+  echo -e "Seguem as informaÃ§Ãµes para o inÃ­cio do recebimento dos dados e sua respectiva janela de transferÃªncia.""\n""JANELA DE TRANSFÃŠRENCIA: "`date +%d/%m/%Y`" a "`date -d "+30 days" '+%d/%m/%Y'`"\n""DIRETORIO DE TRANSFERÃŠNCIA: " $dir1
   tput sgr0
   echo -e "\n"
 }
 
-autoriza()                                     #Função para autorizar remessa (cria o diretorio)
+autoriza()         #FunÃ§Ã£o para autorizar remessa (cria o diretÃ³rio)
 {
   echo -e "Entre com o diretÃ³rio a ser criado (colar o diretÃ³rio completo): "
   read -ep "   > " dir1
@@ -96,7 +96,7 @@ autoriza()                                     #Função para autorizar remessa (c
   setaperm         #Chama a funcao para ajustar as permissoes e retornar o texto do AIG
 }
    
-valida()           #Função para validar remessa
+valida()           #FunÃ§Ã£o para validar remessa
 {
   trata_PRJ()      #Funcao que trata especificamente o dado que tenha PRJ de dado PRE
   {
@@ -110,11 +110,11 @@ valida()           #Função para validar remessa
        elif [ $eprj = "s" ]
          then
            sudo chmod 777 -R $1
-           echo -e "\nEntre com a chave do tecnico que realizara o carregamento:\n"
+           echo -e "\nEntre com a chave do tÃ©cnico que realizarÃ¡ o carregamento:\n"
            read -ep " > " chave_tecnico
-           chave_tecnico=`echo $chave_tecnico | tr [a-z] [A-Z]`           #Converte a chave do técnico para o formato maiúsculo
+           chave_tecnico=`echo $chave_tecnico | tr [a-z] [A-Z]`           #Converte a chave do tÃ©cnico para o formato maiÃºsculo
            dirdwnld="/rdg/petrobras/carregamento_HSM/$chave_tecnico"
-           dirupld=`echo "$1" | sed 's/\/$//'`                            #Retira(se houver) a última barra do caminho do diretorio de origem para não haver erro no comando cut a seguir
+           dirupld=`echo "$1" | sed 's/\/$//'`                            #Retira(se houver) a Ãºltima barra do caminho do diretorio de origem para nÃ£o haver erro no comando cut a seguir
            pasta=`echo "$dirupld" | rev | cut -d'/' -f1 | rev`            #Separa o ultimo subdiretorio do caminho do diretorio de origem
            dirdwnld=`echo "$dirdwnld"/"$pasta"`                           #Concatena o ultimo subdiretorio do caminho do diretorio de origem com o diretorio do tecnico
            clear
@@ -145,7 +145,7 @@ valida()           #Função para validar remessa
        tput sgr0
        resp=""
     }    
-  trata_resposta()  #Função que interage com o usuário na hora de atribuir as permissões. Caso seja dado PRE de PRJ o dado e tratado pela funcao trata_PRJ
+  trata_resposta()  #FunÃ§Ã£o que interage com o usuÃ¡rio na hora de atribuir as permissÃµes. Caso seja dado PRE de PRJ o dado e tratado pela funcao trata_PRJ
   {
      echo -e "\n""Entre com o diretÃ³rio de destino:""\n"
      read -ep "   > " dirdwnld
@@ -234,7 +234,7 @@ valida()           #Função para validar remessa
   checa_boletim
 }
 
-disponibiliza()
+disponibiliza()    #FunÃ§Ã£o para auxiliar na disponibilizaÃ§Ã£o de dados Ã  parceria
 {
 
 
@@ -284,7 +284,7 @@ disponibiliza()
               echo -e "\nArquivo movido com sucesso!!\n"
               sleep 2            
               echo -e "\nPermissoes aplicadas conforme abaixo:\n"
-              find "$pathdwnld" -printf '%70f\t%10m\t%M\n'        #Comando find para exibir as permissões detalhadas em colunas
+              find "$pathdwnld" -printf '%70f\t%10m\t%M\n'        #Comando find para exibir as permissï¿½ï¿½detalhadas em colunas
               echo -e "\n""Tecle <ENTER> para continuar..."
               read #Pausa no sistema.
               resp=""
@@ -297,7 +297,7 @@ disponibiliza()
     }  
   
   
-                               #Testes no diretorio informado
+  #Testes no diretorio informado
   cod_erro=1
   while [ $cod_erro != 0 ]
   do
@@ -306,7 +306,7 @@ disponibiliza()
     clear
     cd $pathupld 2> /dev/null
     cod1erro=$?
-    if [ $cod1erro != 0 ]                                  #Se o diretório for inexistente ou não tiver acesso de leitura
+    if [ $cod1erro != 0 ]                                  #Se o diretó²©¯ for inexistente ou nä¯ tiver acesso de leitura
       then
         echo -e "\nO diretorio informado esta sem permissao ou e inexistente!! Verifique o caminho informado.\n"
         sleep 1
