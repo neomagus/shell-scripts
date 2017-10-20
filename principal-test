@@ -113,9 +113,8 @@ valida()           #Função para validar remessa
            echo -e "\nEntre com a chave do técnico que realizará o carregamento:\n"
            read -ep " > " chave_tecnico
            chave_tecnico=`echo $chave_tecnico | tr [a-z] [A-Z]`           #Converte a chave do técnico para o formato maiúsculo
-           dirdwnld="/rdg/petrobras/carregamento_HSM/$chave_tecnico"
-           dirupld=`echo "$1" | sed 's/\/$//'`                            #Retira(se houver) a última barra do caminho do diretorio de origem para não haver erro no comando cut a seguir
-           pasta=`echo "$dirupld" | rev | cut -d'/' -f1 | rev`            #Separa o ultimo subdiretorio do caminho do diretorio de origem
+           dirdwnld="/rdg/petrobras/carregamento_HSM/$chave_tecnico"      #Armazena o caminho de destino
+           pasta=`basename "$dirupld"`                                    #Separa o ultimo subdiretorio do caminho do diretorio de origem
            dirdwnld=`echo "$dirdwnld"/"$pasta"`                           #Concatena o ultimo subdiretorio do caminho do diretorio de origem com o diretorio do tecnico
            clear
            echo -e "\n""O diretório será movido para o caminho abaixo:" 
