@@ -64,16 +64,21 @@ setaperm()         #Funcao que ajusta as permissoes de um diretorio criado na fu
 
 autoriza()         #Função para autorizar remessa (cria o diretório)
 {
-  echo -e "Entre com o diretório a ser criado (colar o diretório completo): "
-  read -ep "   > " dir1
-  if [ "$dir1" = "" ]
-      then
-        echo -e "\nVoce nao informou nenhum caminho. E necessario informar um diretorio para prosseguir."
-        echo -e "\n""Tecle <ENTER> para continuar..."
-        read #Pausa no sistema.
-        clear
-        autoriza
-  fi
+  while [ 0 = 0 ]
+    do
+      echo -e "Entre com o diretório a ser criado (colar o diretório completo): "
+      read -ep "   > " dir1
+      if [ "$dir1" = "" ]
+        then
+		  echo -e "\nVoce nao informou nenhum caminho. E necessario informar um diretorio para prosseguir."
+	      echo -e "\n""Tecle <ENTER> para continuar..."
+		  read #Pausa no sistema.
+		  clear
+	      continue
+		else	
+		  break
+      fi
+	done
   cd $dir1 2> /dev/null  
   verif_erro=$?
   if [ $verif_erro = 0 ]
@@ -83,10 +88,11 @@ autoriza()         #Função para autorizar remessa (cria o diretório)
       if [ "$resp" = "n" ]
         then
           clear
-          principal
+          continue
         elif [ "$resp" = "s" ]
           then
-            setaperm             
+            setaperm
+			continue
         else
           echo -e "\n""Resposta Inválida!! Entre com 's' ou 'n': "
           continue
